@@ -1,13 +1,31 @@
 import { supabase } from "lib/supabaseClient";
 import { NextResponse } from "next/server";
 
-async function signUp(email, password, retries = 3) {
+async function signUp(
+  { email, password, full_name, role, matric_no, staff_no },
+  retries = 3
+) {
   for (let i = 0; i < retries; i++) {
     try {
-      const { data, error } = await supabase.auth.signUp(
-        { email, password },
-        { timeout: 30000 }
-      );
+      //  Normalize email
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // Decide which identifier to include
+      const metaData = {
+        full_name,
+        role,
+        ...(role === "student" ? { matric_no } : {}),
+        ...(role === "lecturer" || role === "admin" ? { staff_no } : {}),
+      };
+
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          data: metaData,
+        },
+      });
+
       if (error) throw error;
       return data;
     } catch (err) {
@@ -20,7 +38,8 @@ async function signUp(email, password, retries = 3) {
 
 export async function POST(req) {
   try {
-    const { email, password, full_name, matric_no, role } = await req.json();
+    const { email, password, full_name, role, matric_no, staff_no } =
+      await req.json();
 
     if (!email || !password || !full_name || !role) {
       return NextResponse.json(
@@ -29,30 +48,35 @@ export async function POST(req) {
       );
     }
 
-    // Sign up user with retry
-    const authData = await signUp(email, password);
-    const userId = authData.user?.id;
-
-    if (!userId) {
+    //  Role-based validation
+    if (role === "student" && !matric_no) {
       return NextResponse.json(
-        { error: "User creation failed. Please verify your email." },
-        { status: 500 }
+        { error: "Students must provide a matric_no" },
+        { status: 400 }
       );
     }
 
-    // Insert into profiles
-    const { error: profileError } = await supabase.from("profiles").insert([
-      {
-        id: userId,
-        full_name,
-        matric_no: matric_no || null,
-        role,
-      },
-    ]);
-
-    if (profileError) {
+    if ((role === "lecturer" || role === "admin") && !staff_no) {
       return NextResponse.json(
-        { error: `Profile creation failed: ${profileError.message}` },
+        { error: `${role}s must provide a staff_no` },
+        { status: 400 }
+      );
+    }
+
+    // Sign up user (profiles handled by trigger)
+    const authData = await signUp({
+      email,
+      password,
+      full_name,
+      role,
+      matric_no,
+      staff_no,
+    });
+
+    const userId = authData.user?.id;
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User creation failed. Please verify your email." },
         { status: 500 }
       );
     }
