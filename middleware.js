@@ -1,57 +1,73 @@
 import { NextResponse } from "next/server";
-import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 
-// protect routes with role-based checks
+// Role-based route mapping
+const roleRoutes = {
+  student: ["/dashboard/student"],
+  lecturer: ["/dashboard/lecturer"],
+  admin: ["/dashboard/admin"],
+};
+
+function isAuthorized(role, pathname) {
+  if (!roleRoutes[role]) return false;
+  return roleRoutes[role].some((prefix) => pathname.startsWith(prefix));
+}
+
 export async function middleware(req) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+  const { pathname } = req.nextUrl;
 
-  // get user session
+  if (!pathname.startsWith("/dashboard")) {
+    return NextResponse.next();
+  }
+
+  // Initialize Supabase client bound to cookies
+  let res = NextResponse.next();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get: (name) => req.cookies.get(name)?.value,
+        set: (name, value, options) => {
+          res.cookies.set(name, value, options);
+        },
+        remove: (name, options) => {
+          res.cookies.delete(name);
+        },
+      },
+    }
+  );
+
+  // Fetch and refresh session if expired
   const {
     data: { session },
+    error,
   } = await supabase.auth.getSession();
 
-  const url = req.nextUrl;
-
-  // if no session → redirect to login
-  if (!session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  if (error) {
+    console.error("Error fetching session:", error);
   }
 
-  // fetch the user's profile to check role
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", session.user.id)
-    .single();
+  // Get role cookie
+  const role = req.cookies.get("user_role")?.value;
 
-  if (error || !profile) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // If no session OR no role → force login
+  if (!session || !role) {
+    const loginUrl = new URL("/login", req.url);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const role = profile.role;
-
-  // protect admin dashboard
-  if (url.pathname.startsWith("/dashboard/admin") && role !== "admin") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+  // Role mismatch → redirect to correct dashboard
+  if (!isAuthorized(role, pathname)) {
+    const homeUrl = new URL(`/dashboard/${role}`, req.url);
+    return NextResponse.redirect(homeUrl);
   }
 
-  // protect lecturer dashboard
-  if (url.pathname.startsWith("/dashboard/lecturer") && role !== "lecturer") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-
-  // protect student dashboard
-  if (url.pathname.startsWith("/dashboard/student") && role !== "student") {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
-  }
-
+  // Return response (with refreshed cookies if Supabase rotated them)
   return res;
 }
 
-// tell Next.js which routes should be checked
 export const config = {
-  matcher: [
-    "/dashboard/:path*", // apply middleware to all dashboard routes
-  ],
+  matcher: ["/dashboard/:path*"],
 };
