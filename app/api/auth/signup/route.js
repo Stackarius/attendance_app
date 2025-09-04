@@ -1,119 +1,63 @@
 import { supabase } from "lib/supabaseClient";
 import { NextResponse } from "next/server";
 
-async function signUp(
-  { email, password, full_name, role, matric_no, staff_no },
-  retries = 3
-) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      //  Normalize email
-      const normalizedEmail = email.trim().toLowerCase();
-
-      // Decide which identifier to include
-      const metaData = {
-        full_name,
-        role,
-        ...(role === "student" ? { matric_no } : {}),
-        ...(role === "lecturer" || role === "admin" ? { staff_no } : {}),
-      };
-
-      const { data, error } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-        options: {
-          data: metaData,
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    } catch (err) {
-      console.error(`Attempt ${i + 1} failed:`, err.message, err.cause);
-      if (i === retries - 1) throw err;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
-}
-
 export async function POST(req) {
   try {
     const { email, password, full_name, role, matric_no, staff_no } =
       await req.json();
 
-    if (!email || !password || !full_name || !role) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    //  Role-based validation
-    if (role === "student" && !matric_no) {
-      return NextResponse.json(
-        { error: "Students must provide a matric_no" },
-        { status: 400 }
-      );
-    }
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if ((role === "lecturer" || role === "admin") && !staff_no) {
-      return NextResponse.json(
-        { error: `${role}s must provide a staff_no` },
-        { status: 400 }
-      );
-    }
-
-    // Sign up user (profiles handled by trigger)
-    const authData = await signUp({
-      email,
+    //  Sign up WITH metadata upfront
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: normalizedEmail,
       password,
-      full_name,
-      role,
-      matric_no,
-      staff_no,
+      options: {
+        data: {
+          full_name,
+          role: role || "student", // default student
+          matric_no: matric_no || null,
+          staff_no: staff_no || null,
+        },
+      },
     });
 
-    const userId = authData.user?.id;
-    if (!userId) {
+    if (authError) {
+      return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
+
+    const user = authData.user;
+    if (!user) {
       return NextResponse.json(
-        { error: "User creation failed. Please verify your email." },
-        { status: 500 }
+        { error: "Signup failed: no user returned" },
+        { status: 400 }
       );
     }
 
+    //  Success
     return NextResponse.json({
-      message: "User created successfully. Please verify your email.",
-      role,
+      message: "Signup successful",
+      user: {
+        id: user.id,
+        email: user.email,
+        role: role || "student",
+        full_name,
+        matric_no,
+        staff_no,
+      },
     });
   } catch (err) {
-    console.error("Unexpected error:", {
-      message: err.message,
-      cause: err.cause,
-      stack: err.stack,
-    });
+    console.error("Unexpected signup error:", err);
     return NextResponse.json(
       { error: "An unexpected error occurred", details: err.message },
       { status: 500 }
     );
   }
-}
-
-// Reject unsupported methods
-export async function GET() {
-  return NextResponse.json(
-    { error: "Method GET not allowed" },
-    { status: 405 }
-  );
-}
-export async function PUT() {
-  return NextResponse.json(
-    { error: "Method PUT not allowed" },
-    { status: 405 }
-  );
-}
-export async function DELETE() {
-  return NextResponse.json(
-    { error: "Method DELETE not allowed" },
-    { status: 405 }
-  );
 }

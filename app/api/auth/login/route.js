@@ -1,52 +1,45 @@
-import { supabase } from "lib/supabaseServer";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
-  const { email, password } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email and password required" },
-      { status: 400 }
-    );
-  }
+    const supabase = createRouteHandlerClient({ cookies });
 
-  // Sign in
-  const { data: authData, error: authError } =
-    await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
+    const user = data.user;
+    const role = user.user_metadata?.role;
+
+    if (!role) {
+      return NextResponse.json({ error: "No role found" }, { status: 403 });
+    }
+
+    const redirectUrl = `/dashboard/${role}`;
+
+    const response = NextResponse.json({
+      message: "Login successful",
+      redirect: redirectUrl,
+    });
+
+    response.cookies.set("user_role", role, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
+    return response;
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
-
-  const userId = authData.user.id;
-
-  // Fetch profile
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (profileError || !profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 400 });
-  }
-
-  // Redirect based on role
-  if (profile.role === "student") {
-    return NextResponse.redirect(new URL("/dashboard/student", req.url));
-  }
-
-  if (profile.role === "lecturer") {
-    return NextResponse.redirect(new URL("/dashboard/lecturer", req.url));
-  }
-
-  if (profile.role === "admin") {
-    return NextResponse.redirect(new URL("/dashboard/admin", req.url));
-  }
-
-  return NextResponse.redirect(new URL("/", req.url));
 }
