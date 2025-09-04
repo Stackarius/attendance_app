@@ -1,17 +1,15 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 
 export default function LoginPage() {
-    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
+        setError(null);
         setLoading(true);
 
         try {
@@ -24,33 +22,42 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                toast.error(data.error || "Login failed");
-            } else {
-                toast.success(data.message || "Login successful 🎉");
-                router.push(data.redirect || "/dashboard");
+                setError(data.error || "Login failed");
+                setLoading(false);
+                return;
+            }
+
+            // Redirect to role-based dashboard
+            if (data.redirect) {
+                window.location.href = data.redirect;
             }
         } catch (err) {
-            toast.error("Something went wrong");
+            setError("Unexpected error. Try again later.");
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="flex h-screen items-center justify-center bg-gray-100">
             <form
-                onSubmit={handleSubmit}
-                className="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm"
+                onSubmit={handleLogin}
+                className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl"
             >
-                <h1 className="text-2xl font-bold mb-4 text-center">Login</h1>
+                <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
+
+                {error && (
+                    <div className="mb-4 text-red-600 text-sm font-medium">{error}</div>
+                )}
 
                 <input
                     type="email"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-2 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                    className="w-full mb-3 p-2 border rounded-md"
                 />
 
                 <input
@@ -58,14 +65,14 @@ export default function LoginPage() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-2 mb-6 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
-                    className="w-full mb-3 p-2 border rounded-md"
                 />
 
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
                 >
                     {loading ? "Logging in..." : "Login"}
                 </button>
