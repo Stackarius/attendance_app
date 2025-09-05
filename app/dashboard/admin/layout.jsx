@@ -1,5 +1,6 @@
 "use client"
-import Sidebar from "component/admin/Sidebar"
+
+import Sidebar from "component/AdminSidebar"
 
 export default function AdminLayout({ children }) {
     return (
