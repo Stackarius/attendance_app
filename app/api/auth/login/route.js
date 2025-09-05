@@ -1,44 +1,35 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+
+// Plain Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export async function POST(req) {
   try {
     const { email, password } = await req.json();
 
-    const supabase = createRouteHandlerClient({ cookies });
-
+    // Client-side login via API
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
+    if (error)
       return NextResponse.json({ error: error.message }, { status: 401 });
-    }
 
-    const user = data.user;
-    const role = user.user_metadata?.role;
+    const role = data.user.user_metadata?.role;
+    if (!role)
+      return NextResponse.json({ error: "No role found", status: 403 });
 
-    if (!role) {
-      return NextResponse.json({ error: "No role found" }, { status: 403 });
-    }
-
-    const redirectUrl = `/dashboard/${role}`;
-
-    const response = NextResponse.json({
+    // Return JSON only (no cookies)
+    return NextResponse.json({
       message: "Login successful",
-      redirect: redirectUrl,
+      redirect: `/dashboard/${role}`,
+      user: { email: data.user.email, role },
     });
-
-    response.cookies.set("user_role", role, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-
-    return response;
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
