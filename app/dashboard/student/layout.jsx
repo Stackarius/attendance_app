@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "component/student/Sidebar";
+import Sidebar from "@/component/student/Sidebar";
 import Link from "next/link";
 
 export default function StudentLayout({ children }) {

@@ -2,9 +2,9 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { QrCode, BarChart3, CheckCircle } from "lucide-react";
-import Header from "component/Header";
-import Footer from "component/Footer";
-import DashboardPreview from "component/Preview";
+import Header from "@/component/Header";
+import Footer from "@/component/Footer";
+import DashboardPreview from "@/component/Preview";
 
 export default function LandingPage() {
   return (

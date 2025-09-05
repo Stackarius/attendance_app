@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function StudentDashboardPage() {
     const [student, setStudent] = useState(null);

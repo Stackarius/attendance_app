@@ -1,4 +1,4 @@
-import LogoutButton from "component/Logout";
+import LogoutButton from "@/component/Logout";
 import Link from "next/link";
 
 export default function LecturerLayout({ children }) {

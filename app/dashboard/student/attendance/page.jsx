@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import QrScanner from "qr-scanner";
 import { X } from "lucide-react";
 
