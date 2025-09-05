@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Calendar, CheckCircle, BarChart2, User } from "lucide-react";
-import LogoutButton from "component/Logout";
+import LogoutButton from "@/component/Logout";
 
 export default function Sidebar() {
     const pathname = usePathname();
