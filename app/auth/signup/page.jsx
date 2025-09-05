@@ -1,79 +1,49 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
+import { supabase } from "lib/supabaseClient";
 
 export default function SignupPage() {
-    const router = useRouter();
-    const [fullname, setFullname] = useState("");
-    const [matricNo, setMatricNo] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState("student"); // default student
+    const [role, setRole] = useState("student");
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
-    const handleSubmit = async (e) => {
+    const handleSignup = async (e) => {
         e.preventDefault();
         setLoading(true);
 
-        try {
-            const res = await fetch("/api/auth/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ full_name: fullname, matric_no: matricNo, email, password, role }),
-            });
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { role } },
+        });
 
-            const data = await res.json();
-
-            if (!res.ok) {
-                toast.error(data.error || "Signup failed");
-            } else {
-                toast.success(data.message || "Signup successful 🎉");
-                if (result.role === "student") router.push("/dashboard/student");
-                else if (result.role === "lecturer") router.push("/dashboard/lecturer");
-                else if (result.role === "admin") router.push("/dashboard/admin");
-            }
-        } catch (err) {
-            toast.error("Something went wrong");
-        } finally {
+        if (error) {
+            alert(error.message);
             setLoading(false);
+            return;
         }
+
+        router.push("/auth/login");
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-700 text-black">
+        <div className="flex h-screen items-center justify-center bg-gray-100">
             <form
-                onSubmit={handleSubmit}
-                className="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm"
+                onSubmit={handleSignup}
+                className="w-full max-w-sm p-6 bg-white shadow-lg rounded-xl"
             >
-                <h1 className="text-2xl font-bold mb-4 text-center">Sign Up</h1>
-
-                <input
-                    type="text"
-                    placeholder="Full name"
-                    value={fullname}
-                    onChange={(e) => setFullname(e.target.value)}
-                    required
-                    className="w-full mb-3 p-2 border rounded-md"
-                />
-
-                <input
-                    type="text"
-                    placeholder="Matric No"
-                    value={matricNo}
-                    onChange={(e) => setMatricNo(e.target.value)}
-                    required
-                    className="w-full mb-3 p-2 border rounded-md"
-                />
+                <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
 
                 <input
                     type="email"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-2 mb-4 border rounded-lg"
                     required
-                    className="w-full mb-3 p-2 border rounded-md"
                 />
 
                 <input
@@ -81,23 +51,24 @@ export default function SignupPage() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-2 mb-4 border rounded-lg"
                     required
-                    className="w-full mb-3 p-2 border rounded-md"
                 />
 
                 <select
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
-                    className="w-full mb-3 p-2 border rounded-md"
+                    className="w-full p-2 mb-6 border rounded-lg"
                 >
                     <option value="student">Student</option>
                     <option value="lecturer">Lecturer</option>
+                    <option value="admin">Admin</option>
                 </select>
 
                 <button
                     type="submit"
+                    className="w-full p-2 bg-green-600 text-white rounded-lg"
                     disabled={loading}
-                    className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
                     {loading ? "Signing up..." : "Sign Up"}
                 </button>
