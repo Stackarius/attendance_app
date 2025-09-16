@@ -18,7 +18,8 @@ export default function Header() {
     }, []);
     const navLinks = [
         {"title": "Home", "href": "/"},
-        {"title": "Login", "href": "/auth/login"},
+        {"title": "About", "href": "/about"},
+        {"title": "Contact", "href": "/contact"},
         { "title": "Get Started", "href": "/auth/signup" },
     ]
     
