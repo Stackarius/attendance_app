@@ -2,26 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, CheckCircle, BarChart2, User } from "lucide-react";
+import { Home, Calendar, BarChart2, User } from "lucide-react";
 import LogoutButton from "@/component/Logout";
 
 export default function Sidebar() {
-    const pathname = usePathname();
+    const pathname = usePathname(); 
+
+    const basePath = "/dashboard/student";
 
     const menuItems = [
-        { label: "Home", icon: <Home />, href: `${pathname}` },
-        { label: "My Classes", icon: <Calendar />, href: `${pathname}/classes` },
-        { label: "Mark Attendance", icon: <CheckCircle />, href: `${pathname}/attendance` },
-        { label: "Records", icon: <BarChart2 />, href: "/records" },
-        { label: "Profile", icon: <User />, href: "/profile" },
+        { label: "Home", icon: <Home />, href: `${basePath}` },
+        { label: "My Classes", icon: <Calendar />, href: `${basePath}/attendance` },
+        { label: "Records", icon: <BarChart2 />, href: `${basePath}/records` },
+        { label: "Profile", icon: <User />, href: `${basePath}/profile` },
     ];
 
     return (
-        <aside className="w-64 bg-white shadow-md p-4 flex flex-col">
+        <aside className="w-64 md:h-full bg-white shadow-md p-4 flex flex-col">
             <h2 className="text-2xl text-gray-700 font-bold mb-6">AttendEase</h2>
-            <nav className="space-y-2 flex-1">
+            <nav className="space-y-2 flex-1 mb-2">
                 {menuItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href; 
 
                     return (
                         <Link
