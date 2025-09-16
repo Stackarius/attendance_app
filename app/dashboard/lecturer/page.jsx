@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import  supabase  from "@/lib/supabaseClient";
 import QRCode from "qrcode";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function LecturerDashboardPage() {
     const router = useRouter();
@@ -24,11 +24,10 @@ export default function LecturerDashboardPage() {
     const [creatingLecture, setCreatingLecture] = useState(false);
     const [qrDataURL, setQrDataURL] = useState(null);
 
-    // 1️⃣ Check session & role
     useEffect(() => {
         async function checkRole() {
             setLoadingSession(true);
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabase.auth.getSession() ;
             const user = session?.user;
 
             if (!user || user.user_metadata?.role !== "lecturer") {
@@ -46,7 +45,7 @@ export default function LecturerDashboardPage() {
         checkRole();
     }, [router]);
 
-    // 2️⃣ Fetch courses
+    // fetch courses for the lecturer
     useEffect(() => {
         if (!lecturer) return;
 
@@ -85,7 +84,7 @@ export default function LecturerDashboardPage() {
         fetchCourses();
     }, [lecturer]);
 
-    // 3️⃣ Create lecture & generate QR
+    //  Create lecture & generate QR
     const handleCreateLecture = async (e) => {
         e.preventDefault();
 
