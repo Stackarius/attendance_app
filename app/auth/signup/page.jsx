@@ -183,6 +183,8 @@ export default function SignupPage() {
                 </div>
 
             </div>
+            <div className="absolute inset-0 bg-[url('/campus.jpg')] bg-contain no-repeat opacity-10 pointer-events-none"></div>
+
         </div>
     );
 }
