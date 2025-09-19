@@ -17,7 +17,7 @@ export default function LecturerLayout({ children }) {
     const menuItems = [
         { label: "Create Lecture", icon: <PlusCircle className="w-5 h-5" />, href: "/dashboard/lecturer" },
         { label: "Attendance", icon: <ClipboardList className="w-5 h-5" />, href: "/dashboard/lecturer/attendance" },
-        { label: "Courses", icon: <BookOpen className="w-5 h-5" />, href: "/dashboard/lecturer/lectures" },
+        { label: "Lectures", icon: <BookOpen className="w-5 h-5" />, href: "/dashboard/lecturer/lectures" },
         { label: "Profile", icon: <User className="w-5 h-5" />, href: "/dashboard/lecturer/profile" },
     ];
 
