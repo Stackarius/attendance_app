@@ -172,7 +172,6 @@ export default function AboutUs() {
       </motion.section>
 
       <Footer />
-      <div className="absolute inset-0 bg-[url('/grid.jpg')] bg-contain no-repeat opacity-10 pointer-events-none"></div>
     </div>
   );
 }
